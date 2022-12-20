@@ -123,8 +123,9 @@ shape_colors = [(0, 255, 0), (255, 0, 0), (0, 255, 255), (255, 255, 0), (255, 16
 # индексы 0 - 6 представляют фигуры
 
 
-class Piece(object):
+class Piece:
     def __init__(self, column, row, shape):
+        """конструктор координата, цвета и вращения форм.Цвет фигуры задается любым индексом в списке цветов"""
         self.x = column
         self.y = row
         self.shape = shape
@@ -133,6 +134,8 @@ class Piece(object):
 
 
 def create_grid(locked_positions={}):
+    """Создадим пустую сетку, в которой будет идти игра. Создадим список, полного цветов.
+     Также нарисуем статичные блоки, которые уже упали и не двигаются"""
     grid = [[(0, 0, 0) for x in range(10)] for x in range(20)]
 
     for i in range(len(grid)):
@@ -144,6 +147,7 @@ def create_grid(locked_positions={}):
 
 
 def convert_shape_format(shape):
+    """Определяет как следует распознавать формы, заданнные списками с нулями и точками"""
     positions = []
     format = shape.shape[shape.rotation % len(shape.shape)]
 
@@ -160,6 +164,7 @@ def convert_shape_format(shape):
 
 
 def valid_space(shape, grid):
+    """Проверяет сетку, что при движении остается свободное пространство"""
     accepted_positions = [[(j, i) for j in range(10) if grid[i][j] == (0, 0, 0)] for i in range(20)]
     accepted_positions = [j for sub in accepted_positions for j in sub]
     formatted = convert_shape_format(shape)
@@ -173,6 +178,7 @@ def valid_space(shape, grid):
 
 
 def check_lost(positions):
+    """Проверяет, когда статичные фигуры начнут занимать всю сетку по оси У"""
     for pos in positions:
         x, y = pos
         if y < 1:
@@ -181,12 +187,14 @@ def check_lost(positions):
 
 
 def get_shape():
+    """Получаем фигуры в случайном порядке"""
     global shapes, shape_colors
 
     return Piece(5, 0, random.choice(shapes))
 
 
 def draw_text_middle(text, size, color, surface):
+    """Определяет параметры и расположение любого необходимого текста"""
     font = pygame.font.SysFont('comicsans', size, bold=True)
     label = font.render(text, True, color)
 
@@ -195,19 +203,20 @@ def draw_text_middle(text, size, color, surface):
 
 
 def draw_grid(surface, row, col):
+    """Нарисуем сами линии, которые образуют сетку, внутри области, где происходит игра"""
     sx = top_left_x
     sy = top_left_y
     for i in range(row):
-        pygame.draw.line(surface, (128, 128, 128), (sx, sy + i*30), (sx + play_width, sy + i * 30))
+        pygame.draw.line(surface, (255, 128, 128), (sx, sy + i*30), (sx + play_width, sy + i * 30))
         # горизонтальные линии
     for j in range(col):
-        pygame.draw.line(surface, (128, 128, 128), (sx + j * 30, sy), (sx + j * 30, sy + play_height))
+        pygame.draw.line(surface, (255, 128, 128), (sx + j * 30, sy), (sx + j * 30, sy + play_height))
         # вертикальные линии
 
 
 def clear_rows(grid, locked):
+    """Очищает строки, когда они заполняются статичными фигурами"""
     # необходимо посмотреть, очищена ли строка, сдвинем каждую вторую строку выше вниз на одну
-
     inc = 0
     for i in range(len(grid)-1, -1, -1):
         row = grid[i]
@@ -229,6 +238,7 @@ def clear_rows(grid, locked):
 
 
 def draw_next_shape(shape, surface):
+    """Выбирает из списка форму фигуры и определяет ее в качестве подсказки правее от сетки"""
     font = pygame.font.SysFont('comicsans', 25)
     label = font.render('Следующая фигура', True, (255, 255, 255))
 
@@ -246,8 +256,9 @@ def draw_next_shape(shape, surface):
 
 
 def draw_window(surface):
+    """Заполним фон цветом, напишем название над сеткой, также нарисуем границу вокруг сетки"""
     surface.fill((0, 0, 0))
-    # Tetris Title
+    # Тетрис название
     font = pygame.font.SysFont('comicsans', 50)
     label = font.render('Тетрис', True, (255, 255, 255))
 
@@ -257,12 +268,16 @@ def draw_window(surface):
         for j in range(len(grid[i])):
             pygame.draw.rect(surface, grid[i][j], (top_left_x + j * 30, top_left_y + i * 30, 30, 30), 0)
 
-    # нарисуем сетку и границу
+    # нарисуем границу вокруг нашей сетки
     draw_grid(surface, 20, 10)
     pygame.draw.rect(surface, (255, 0, 0), (top_left_x, top_left_y, play_width, play_height), 4)
 
 
 def main():
+    """главная функция, которая описывает сами падения фигур и управление ими. Описывает скорость падения фигур.
+    С помощью стрелочек определяем движение падающей фигуры. Описываем падение фигуры на землю и прерващение его
+    в статичное состояние.Добавляем движение фигуры в сетку. Определяем проигрыш игрока и добавляем текст и музыку
+    сразу после проигрыша"""
     global grid
 
     locked_positions = {}  # (x,y):(255,0,0)
@@ -276,7 +291,7 @@ def main():
     fall_time = 0
 
     while run:
-        fall_speed = 0.15
+        fall_speed = 0.15     # скорость падения фигур
 
         grid = create_grid(locked_positions)
         fall_time += clock.get_rawtime()
@@ -290,30 +305,28 @@ def main():
                 current_piece.y -= 1
                 change_piece = True
 
-        for event in pygame.event.get():
+        for event in pygame.event.get():             # Событие закрытия окна
             if event.type == pygame.QUIT:
                 run = False
                 pygame.display.quit()
                 quit()
 
-            if event.type == pygame.KEYDOWN:
+            if event.type == pygame.KEYDOWN:         # Событие движения фигуры налево
                 if event.key == pygame.K_LEFT:
                     current_piece.x -= 1
                     if not valid_space(current_piece, grid):
                         current_piece.x += 1
 
-                elif event.key == pygame.K_RIGHT:
+                elif event.key == pygame.K_RIGHT:    # Событие движения фигруы направо
                     current_piece.x += 1
                     if not valid_space(current_piece, grid):
                         current_piece.x -= 1
-                elif event.key == pygame.K_UP:
-                    # вращаем фигуру
+                elif event.key == pygame.K_UP:       # Событие вращения фигуры
                     current_piece.rotation = current_piece.rotation + 1 % len(current_piece.shape)
                     if not valid_space(current_piece, grid):
                         current_piece.rotation = current_piece.rotation - 1 % len(current_piece.shape)
 
-                if event.key == pygame.K_DOWN:
-                    # перемещаем фигуру вниз
+                if event.key == pygame.K_DOWN:        # Событие ускорения фигуры вниз
                     current_piece.y += 1
                     if not valid_space(current_piece, grid):
                         current_piece.y -= 1
@@ -326,7 +339,7 @@ def main():
             if y > -1:
                 grid[y][x] = current_piece.color
 
-        # Если кусок падает на землю
+        # Если фигура падает на землю
         if change_piece:
             for pos in shape_pos:
                 p = (pos[0], pos[1])
@@ -354,6 +367,7 @@ def main():
 
 
 def main_menu():
+    """Показывает как начать игру, выдает текст перед началом.Также определяет, когда игра закончится"""
     run = True
     while run:
         win.fill((0, 0, 0))
